@@ -8,10 +8,16 @@ namespace Lucene.NET.ReplicatorSample
 {
     public class DataIngestSimulator
     {
+        private readonly Index index;
         private readonly Random rnd = new Random();
         private readonly Guid[] ids = Enumerable.Repeat(0, 500).Select(ï => Guid.NewGuid()).ToArray();
         private readonly string[] words = "car,dog,plane,a,and,or,field,cargo,passenger,mold,bread,fox,bird,the,for,woman,man,age,date,word,wild,sport,forest,jump,train".Split(',');
         private readonly string[] names = "Peter,Carl,James,Karen,Natalie,Mathias,John,Kate,Josh,Patrick,Natasha,Angelina,Craig".Split(',');
+
+        public DataIngestSimulator(Index index)
+        {
+            this.index = index;
+        }
 
         public void Start()
         {
@@ -25,10 +31,9 @@ namespace Lucene.NET.ReplicatorSample
                     .Range(0, NextRandomUpdateCount())
                     .Select(CreateDocument))
                 {
-                    Index.Instance.Write(term, doc);
+                    index.Write(term, doc);
                 }
-
-                Index.Instance.Commit();
+                index.Commit();
                 await Task.Delay(TimeSpan.FromSeconds(30));
             }
         }

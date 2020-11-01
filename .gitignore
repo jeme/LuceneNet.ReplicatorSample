@@ -348,4 +348,4 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
-/src/Lucene.NET.ReplicatorSample/APP_DATA/INDEX
+/src/Lucene.NET.ReplicatorSample/APP_DATA

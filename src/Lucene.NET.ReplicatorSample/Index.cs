@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Analysis.Util;
@@ -13,29 +14,46 @@ using Directory = System.IO.Directory;
 
 namespace Lucene.NET.ReplicatorSample
 {
+    public class Indices
+    {
+        public static Indices Instance = new Indices();
+
+        private readonly Dictionary<string, Index> indices = new Dictionary<string, Index>();
+        private readonly Dictionary<string, IReplicator> replicators = new Dictionary<string, IReplicator>();
+
+        public ReplicationService ReplicatorService { get; private set; }
+
+        public void Initialize()
+        {
+            ReplicatorService = new ReplicationService(replicators, "/api/replicate");
+        }
+
+        public Index AddIndex(string name, IWebHostEnvironment env)
+        {
+            Index index = new Index(name, env);
+            replicators.Add(name, index.Replicator);
+            indices.Add(name, index);
+            return index;
+        }
+    }
+
     public class Index
     {
         private const LuceneVersion VERSION = LuceneVersion.LUCENE_48;
-        public static Index Instance = new Index();
 
-        private IndexWriter writer;
-        private LocalReplicator replicator;
-        public ReplicationService ReplicatorService { get; private set; }
+        private readonly IndexWriter writer;
+        public LocalReplicator Replicator { get; }
 
-        public void Initialize(IWebHostEnvironment env)
+        public Index(string name, IWebHostEnvironment env)
         {
             IndexWriterConfig config = new IndexWriterConfig(VERSION, new StandardAnalyzer(VERSION, CharArraySet.EMPTY_SET));
             config.IndexDeletionPolicy = new SnapshotDeletionPolicy(config.IndexDeletionPolicy);
             
-            string path = Path.Combine(env.ContentRootPath, "APP_DATA", "INDEX");
+            string path = Path.Combine(env.ContentRootPath, "APP_DATA", "Indices", name);
             Directory.CreateDirectory(path);
             writer = new IndexWriter(FSDirectory.Open(path), config);
 
-            replicator = new LocalReplicator();
-            ReplicatorService = new ReplicationService(new Dictionary<string, IReplicator>
-            {
-                ["shard_name"] = replicator
-            }, "/api/replicate");
+            Replicator = new LocalReplicator();
         }
 
         public void Write(Term term, Document doc)
@@ -46,7 +64,7 @@ namespace Lucene.NET.ReplicatorSample
         public void Commit()
         {
             writer.Commit();
-            replicator.Publish(new IndexRevision(writer));
+            Replicator.Publish(new IndexRevision(writer));
         }
     }
 }

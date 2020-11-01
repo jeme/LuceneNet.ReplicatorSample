@@ -31,10 +31,12 @@ namespace Lucene.NET.ReplicatorSample
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            Index.Instance.Initialize(env);
+            Indices.Instance.Initialize();
 
-            DataIngestSimulator simulator = new DataIngestSimulator();
-            simulator.Start();
+
+            new DataIngestSimulator(Indices.Instance.AddIndex("IndexA", env)).Start();
+            new DataIngestSimulator(Indices.Instance.AddIndex("IndexB", env)).Start();
+            new DataIngestSimulator(Indices.Instance.AddIndex("IndexC", env)).Start();
 
             if (env.IsDevelopment())
             {
@@ -47,7 +49,7 @@ namespace Lucene.NET.ReplicatorSample
                 endpoints.MapGet("/api/replicate/{*url}", async context =>
                 {
                     await Task.Yield();
-                    Index.Instance.ReplicatorService.Perform(context.Request, context.Response);
+                    Indices.Instance.ReplicatorService.Perform(context.Request, context.Response);
                 });
                 endpoints.MapGet("/", async context =>
                 {
